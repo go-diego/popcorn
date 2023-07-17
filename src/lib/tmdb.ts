@@ -134,3 +134,80 @@ export const getMovieDetails = async (movieId: number) => {
   })
 }
 export type MovieDetailsResponse = Awaited<ReturnType<typeof getMovieDetails>>
+
+/**
+ * AUTHENTICATION
+ */
+const AUTH_BASE_URL = new URL(`${BASE_URL}/authentication`)
+
+export const getRequestToken = async () => {
+  const url = new URL(`${AUTH_BASE_URL}/token/new`)
+  return fetcher<{request_token: string}>(url.toString(), {
+    headers: AUTH_HEADER,
+  })
+}
+
+export const createSession = async (requestToken: string) => {
+  const url = new URL(`${AUTH_BASE_URL}/session/new`)
+  url.searchParams.set('request_token', requestToken)
+  return fetcher<{session_id: string}>(url.toString(), {
+    method: 'GET',
+    headers: AUTH_HEADER,
+  })
+}
+
+/**
+ * ACCOUNT
+ */
+
+export type Account = {
+  id: number
+}
+
+const ACCOUNT_BASE_URL = new URL(`${BASE_URL}/account`)
+export const ACCOUNT_BASE_URL_STRING = ACCOUNT_BASE_URL.toString()
+export const getAccount = async (sessionId: string) => {
+  const url = new URL(`${ACCOUNT_BASE_URL}`)
+  url.searchParams.set('session_id', sessionId)
+
+  return fetcher<Account>(url.toString(), {
+    headers: AUTH_HEADER,
+  })
+}
+
+export const getAccountFavoriteMovies = async (accountId: number) => {
+  const url = new URL(`${ACCOUNT_BASE_URL}/${accountId}/favorite/movies`)
+
+  return fetcher<ExploreMoviesResponse>(url.toString(), {
+    headers: AUTH_HEADER,
+  })
+}
+
+export const favoriteMovie = async ({
+  accountId,
+  sessionId,
+  movieId,
+  favorite,
+}: {
+  accountId: number
+  sessionId: string
+  movieId: number
+  favorite: boolean
+}) => {
+  const url = new URL(
+    `${ACCOUNT_BASE_URL}/${accountId}/favorite?session_id=${sessionId}`,
+  )
+  const body = JSON.stringify({
+    media_type: 'movie',
+    media_id: movieId,
+    favorite,
+  })
+  return fetcher(url.toString(), {
+    method: 'POST',
+    headers: {
+      ...AUTH_HEADER,
+      'Content-Type': 'application/json;charset=utf-8',
+    },
+    body,
+  })
+}
