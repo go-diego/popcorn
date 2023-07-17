@@ -33,7 +33,7 @@ export function useAccountFavoriteMovies(
 export const useFavoriteMovie = () => {
   return useMutation({
     mutationFn: favoriteMovie,
-    onSuccess: (_, {accountId}) => {
+    onSuccess: async (_, {accountId}) => {
       /**
        * Just invalidate the query to get the latest list of favorite movies
        * so that the UI can update accordingly.
@@ -41,7 +41,10 @@ export const useFavoriteMovie = () => {
        * Alternatively, we can update the query cache and optimistically update
        * the UI
        */
-      queryClient.invalidateQueries(['account/favorite-movies', accountId])
+      await queryClient.invalidateQueries([
+        'account/favorite-movies',
+        accountId,
+      ])
     },
   })
 }

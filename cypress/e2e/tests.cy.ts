@@ -190,3 +190,179 @@ describe('As a user, I want to search for a movie by its title', () => {
     cy.url().should('include', `/movie/${MOCK_MOVIE.id}`)
   })
 })
+
+const MOCK_ACCOUNT_ID = 12345
+describe('As a user, I want to add or remove movies from my personal favorite movie list', () => {
+  beforeEach(() => {
+    /**
+     * Just mocking this so that we don't keep hitting the real API.
+     * Not using this in our tests though.
+     */
+    cy.intercept('GET', `**/authentication/token/new`, {
+      body: {
+        success: true,
+        expires_at: '2023-07-17 19:44:12 UTC',
+        request_token: 'NOT_A_REAL_TOKEN',
+      },
+    }).as('getNewToken')
+  })
+
+  it("should redirect user to auth page if user isn't authenticated", () => {
+    cy.visit(`/movie/${MOCK_MOVIE.id}`, {
+      onBeforeLoad(win) {
+        /**
+         * we can't assert on the url of an external site
+         * so we mock the window.open method and assert that it
+         * was called with the correct url
+         */
+        cy.stub(win, 'open').as('winOpen')
+      },
+    })
+    cy.findByTestId('favorite-button').click()
+    cy.get('@winOpen').should(
+      'be.calledWithMatch',
+      'https://www.themoviedb.org/authenticate',
+    )
+  })
+
+  it('should favorite movie', () => {
+    /**
+     * We can't actually mock the details request with cypress
+     * because it is made server-side. If we really wanted to do this
+     * we can use something like mswjs to mock server-side requests.
+     * I decided to just not do that for this exercise because I've gone
+     * down that path before and it sucks.
+     */
+    // cy.intercept('GET', `**/movie/${MOCK_MOVIE.id}?*`, {
+    //   body: MOCK_MOVIE,
+    // }).as('getMovie')
+
+    cy.intercept('GET', `**/account?*`, {
+      body: {
+        id: MOCK_ACCOUNT_ID,
+      },
+    }).as('getAccount')
+
+    /**
+     * This is called twice so we add a counter to decide what alias
+     * to use for the intercept.
+     */
+    let getFavoritesCounter = 0
+    cy.intercept('GET', `**/account/*/favorite/movies`, (req) => {
+      getFavoritesCounter += 1
+      if (getFavoritesCounter === 1) {
+        req.alias = 'getFavorites'
+        req.reply({
+          body: {
+            page: 1,
+            total_pages: 500,
+            total_results: 10000,
+            results: [],
+          },
+        })
+      } else if (getFavoritesCounter === 2) {
+        req.alias = 'getNewFavorites'
+        req.reply({
+          body: {
+            page: 1,
+            total_pages: 500,
+            total_results: 10000,
+            results: [MOCK_MOVIE],
+          },
+        })
+      }
+    })
+
+    cy.intercept('POST', `**/account/*/favorite?*`, {
+      statusCode: 201,
+      body: {
+        status_code: 1,
+        status_message: 'Success.',
+      },
+    }).as('addFavorite')
+
+    cy.visit(`/movie/${MOCK_MOVIE.id}`, {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('session_id', 'my-session-id')
+      },
+    })
+
+    cy.wait('@getAccount')
+    cy.wait('@getFavorites')
+
+    cy.findByTestId('favorite-button').should('have.class', 'not-favorited')
+    cy.findByTestId('favorite-button').click()
+
+    cy.wait('@addFavorite')
+
+    /**
+     * We know that clicking the favorite button will invalidate the
+     * favorites cache, so we need to wait for the new favorites to be fetched
+     * before we can assert that the button has the correct class
+     */
+    cy.wait('@getNewFavorites')
+
+    cy.findByTestId('favorite-button').should('have.class', 'favorited')
+  })
+
+  it('should unfavorite movie', () => {
+    cy.intercept('GET', `**/account?*`, {
+      body: {
+        id: MOCK_ACCOUNT_ID,
+      },
+    }).as('getAccount')
+
+    let getFavoritesCounter = 0
+    cy.intercept('GET', `**/account/*/favorite/movies`, (req) => {
+      getFavoritesCounter += 1
+      if (getFavoritesCounter === 1) {
+        req.alias = 'getFavorites'
+        req.reply({
+          body: {
+            page: 1,
+            total_pages: 500,
+            total_results: 10000,
+            results: [MOCK_MOVIE],
+          },
+        })
+      } else if (getFavoritesCounter === 2) {
+        req.alias = 'getNewFavorites'
+        req.reply({
+          body: {
+            page: 1,
+            total_pages: 500,
+            total_results: 10000,
+            results: [],
+          },
+        })
+      }
+    })
+
+    cy.intercept('POST', `**/account/*/favorite?*`, {
+      statusCode: 201,
+      body: {
+        status_code: 1,
+        status_message: 'Success.',
+      },
+    }).as('removeFavorite')
+
+    cy.visit(`/movie/${MOCK_MOVIE.id}`, {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('session_id', 'my-session-id')
+      },
+    })
+
+    cy.wait('@getAccount')
+    cy.wait('@getFavorites')
+
+    cy.findByTestId('favorite-button').as('favoriteButton')
+    cy.get('@favoriteButton').should('have.class', 'favorited')
+
+    cy.get('@favoriteButton').click()
+
+    cy.wait('@removeFavorite')
+    cy.wait('@getNewFavorites')
+
+    cy.get('@favoriteButton').should('have.class', 'not-favorited')
+  })
+})

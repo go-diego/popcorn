@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "cy:run": "cypress run",
+    "cy": "start-server-and-test dev http://localhost:3000 cy:run"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.0.4",
@@ -35,6 +37,7 @@
   "devDependencies": {
     "@testing-library/cypress": "^9.0.0",
     "@types/lodash.debounce": "^4.0.7",
-    "cypress": "^12.17.1"
+    "cypress": "^12.17.1",
+    "start-server-and-test": "^2.0.0"
   }
 }

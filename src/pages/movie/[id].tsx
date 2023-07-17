@@ -88,8 +88,10 @@ function MovieDetailsPage({
      */
     if (!sessionId || !account?.id) {
       const {request_token} = await getRequestToken()
+
       window.open(
         `https://www.themoviedb.org/authenticate/${request_token}?redirect_to=${window.location.href}`,
+        '_self',
       )
     } else {
       favoriteMovie({
@@ -126,10 +128,13 @@ function MovieDetailsPage({
           {showFavoriteButton && (
             <div className="flex justify-center">
               <Button
+                data-testid="favorite-button"
                 size="sm"
                 variant={isFavorited ? 'secondary' : 'outline'}
                 onClick={handleFavorite}
-                className="rounded sm:w-full"
+                className={`rounded sm:w-full ${
+                  isFavorited ? 'favorited' : 'not-favorited'
+                }`}
               >
                 {isFavorited ? 'Unfavorite 💔' : 'Favorite ❤️'}
               </Button>
