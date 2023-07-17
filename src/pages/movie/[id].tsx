@@ -1,7 +1,6 @@
 import {useState, useMemo, useCallback, useEffect} from 'react'
 import {GetServerSideProps} from 'next'
 import {
-  ExploreMoviesResponse,
   MovieDetails,
   createSession,
   getMovieDetails,
@@ -15,7 +14,6 @@ import {
   useFavoriteMovie,
 } from '@/hooks/account'
 import {useRouter} from 'next/router'
-import {queryClient} from '@/lib/utils'
 
 function MovieDetailsPage({
   details: {
@@ -27,15 +25,6 @@ function MovieDetailsPage({
     tagline,
     runtime,
     id,
-    adult,
-    backdrop_path,
-    genre_ids,
-    original_language,
-    original_title,
-    popularity,
-    video,
-    vote_average,
-    vote_count,
   },
 }: {
   details: MovieDetails
@@ -51,6 +40,11 @@ function MovieDetailsPage({
     }
   }, [])
 
+  /**
+   * Don't like this but it was the easiest way to authenticate a user.
+   * Ideally would want to setup a /authorize page that does this
+   * and ideally wouldn't want to store the token in local storage.
+   */
   useEffect(() => {
     const token = router.query.request_token as string
     if (token && !sessionId) {
@@ -63,6 +57,9 @@ function MovieDetailsPage({
           console.log(err)
         })
         .finally(() => {
+          /**
+           * Replace the current route with the same route but without the request_token query param.
+           */
           router.replace(`/movie/${id}`, undefined, {shallow: true})
         })
     }
@@ -85,87 +82,24 @@ function MovieDetailsPage({
   )
 
   const handleFavorite = useCallback(async () => {
+    /**
+     * Just doing this for now but would be ideal to have some kind of Auth gate that
+     * gates components if user isn't authenticated.
+     */
     if (!sessionId || !account?.id) {
       const {request_token} = await getRequestToken()
       window.open(
         `https://www.themoviedb.org/authenticate/${request_token}?redirect_to=${window.location.href}`,
       )
     } else {
-      favoriteMovie(
-        {
-          sessionId,
-          accountId: account?.id,
-          movieId: id,
-          favorite: !isFavorited,
-        },
-        {
-          onSuccess: () => {
-            /**
-             * optimistically update UI by updating the query data for favorited
-             * movies.
-             *
-             */
-            const key = ['account/favorite-movies', account?.id]
-            const data = queryClient.getQueryData<ExploreMoviesResponse>(key)
-
-            /**
-             * If is already favorited, remove it from list,
-             * otherwise add it to the list.
-             *
-             * When adding we need to add all the right properties
-             * to the movie object.
-             */
-            const updatedFavorites = isFavorited
-              ? data?.results.filter((m) => m.id !== id)
-              : [
-                  ...(data?.results || []),
-                  {
-                    id,
-                    title,
-                    poster_path,
-                    release_date,
-                    adult,
-                    backdrop_path,
-                    genre_ids,
-                    original_language,
-                    original_title,
-                    popularity,
-                    video,
-                    vote_average,
-                    vote_count,
-                    overview,
-                  },
-                ]
-
-            if (data) {
-              data.results = updatedFavorites || []
-            }
-
-            queryClient.setQueryData(key, data)
-          },
-        },
-      )
+      favoriteMovie({
+        sessionId,
+        accountId: account?.id,
+        movieId: id,
+        favorite: !isFavorited,
+      })
     }
-  }, [
-    sessionId,
-    account?.id,
-    id,
-    favoriteMovie,
-    isFavorited,
-    title,
-    poster_path,
-    release_date,
-    adult,
-    backdrop_path,
-    genre_ids,
-    original_language,
-    original_title,
-    popularity,
-    video,
-    vote_average,
-    vote_count,
-    overview,
-  ])
+  }, [sessionId, account?.id, id, favoriteMovie, isFavorited])
 
   /**
    * Don't show the button if either of the account or favorited movies queries are
@@ -174,10 +108,9 @@ function MovieDetailsPage({
    */
   const showFavoriteButton = useMemo(
     () =>
-      (!!sessionId && !isLoadingAccount) ||
-      true ||
-      (!!account?.id && !isLoadingFavoritedMovies) ||
-      true,
+      (!!sessionId ? !isLoadingAccount : true) &&
+      (!!account?.id ? !isLoadingFavoritedMovies : true),
+
     [isLoadingAccount, isLoadingFavoritedMovies, sessionId, account?.id],
   )
 
@@ -230,6 +163,11 @@ function MovieDetailsPage({
 }
 
 export const getServerSideProps: GetServerSideProps = async ({params}) => {
+  /**
+   * Load movie details server-side. Redirect to 404 if not found.
+   * We save ourselves from managing loading state and not found state in the client.
+   * And if this was a real app, we'd want to do this anyway for SEO (would have to add the tags at the page level still)
+   */
   const id = params?.id as string | undefined
 
   if (!id)
@@ -239,6 +177,9 @@ export const getServerSideProps: GetServerSideProps = async ({params}) => {
 
   let movieDetails = null
   try {
+    /**
+     * Could have gotten crazy here and used react-query's `queryClient.prefetchQuery` too
+     */
     movieDetails = await getMovieDetails(parseInt(id, 10))
   } catch (error) {
     console.error(error)
