@@ -88,7 +88,7 @@ function MovieDetailsPage({
     if (!sessionId || !account?.id) {
       const {request_token} = await getRequestToken()
       window.open(
-        `https://www.themoviedb.org/authenticate/${request_token}?redirect_to=http://localhost:3000/movie/${id}`,
+        `https://www.themoviedb.org/authenticate/${request_token}?redirect_to=${window.location.href}`,
       )
     } else {
       favoriteMovie(
