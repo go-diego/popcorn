@@ -80,7 +80,7 @@ export function SearchDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="px-0 pt-10 sm:max-w-[425px] h-screen sm:h-[3000px] lg:h-[500px] flex flex-col">
+      <DialogContent className="px-0 pt-10 sm:max-w-[425px] h-screen sm:h-[500px] lg:h-[500px] flex flex-col">
         <div className="pt-4 px-1 flex w-full items-center">
           <Input
             className="w-full"
@@ -90,7 +90,9 @@ export function SearchDialog({
         </div>
         <div className="flex flex-col items-center justify-center overflow-y-auto flex-1">
           {error ? (
-            <p className="text-red-700">An error occurred. Please try again.</p>
+            <p data-testid="search-movies-error" className="text-red-700">
+              An error occurred. Please try again.
+            </p>
           ) : (
             <>
               {isSearching && <Loading />}
@@ -98,13 +100,19 @@ export function SearchDialog({
                 searchResults.length === 0 &&
                 searchString.length > 0 && (
                   <div className="flex flex-col items-center justify-center h-screen sm:h-[3000px] lg:h-[500px]">
-                    <p className="text-gray-600 text-xl font-semibold">
+                    <p
+                      data-testid="no-search-results"
+                      className="text-gray-600 text-xl font-semibold"
+                    >
                       No results found
                     </p>
                   </div>
                 )}
               {!isSearching && searchResults.length > 0 && (
-                <ul className=" w-full px-1 h-full">
+                <ul
+                  data-testid="search-results-list"
+                  className="w-full px-1 h-full"
+                >
                   {searchResults.map((movie) => (
                     <MovieSearchResultItem
                       onMovieSelect={handleMovieClick}

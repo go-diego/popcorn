@@ -8,7 +8,11 @@ export default function AppBar({onOpenSearch}: {onOpenSearch: () => void}) {
         <Link href="/">
           <span className="text-lg sm:text-4xl">🍿Popcorn</span>
         </Link>
-        <Button onClick={onOpenSearch} variant="outline">
+        <Button
+          data-testid="search-movies-button"
+          onClick={onOpenSearch}
+          variant="outline"
+        >
           Search...
           <span className="text-sm pl-2">🔎</span>
         </Button>
