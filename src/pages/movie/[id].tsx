@@ -167,6 +167,11 @@ function MovieDetailsPage({
     overview,
   ])
 
+  /**
+   * Don't show the button if either of the account or favorited movies queries are
+   * enabled AND loading. This is to prevent the button from flashing from unfavorited to favorited
+   * while the query settles.
+   */
   const showFavoriteButton = useMemo(
     () =>
       (!!sessionId && !isLoadingAccount) ||
@@ -178,26 +183,28 @@ function MovieDetailsPage({
 
   return (
     <div className="flex h-full flex-col md:container md:mx-auto py-5 px-2 sm:px-8">
-      <div className="flex gap-4">
-        <img
-          src={`https://image.tmdb.org/t/p/original/${poster_path}`}
-          alt={title}
-          className="max-h-[300px] object-cover rounded"
-        />
-        <div className="flex-1">
-          <div className="flex justify-between">
-            <h1 className="text-4xl mb-1">{title}</h1>
-            {showFavoriteButton && (
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col gap-2">
+          <img
+            src={`https://image.tmdb.org/t/p/original/${poster_path}`}
+            alt={title}
+            className="max-h-[300px] object-cover rounded"
+          />
+          {showFavoriteButton && (
+            <div className="flex justify-center">
               <Button
                 size="sm"
-                variant={isFavorited ? 'outline' : 'secondary'}
+                variant={isFavorited ? 'secondary' : 'outline'}
                 onClick={handleFavorite}
-                className="rounded"
+                className="rounded sm:w-full"
               >
                 {isFavorited ? 'Unfavorite 💔' : 'Favorite ❤️'}
               </Button>
-            )}
-          </div>
+            </div>
+          )}
+        </div>
+        <div className="flex-1">
+          <h1 className="text-4xl mb-1">{title}</h1>
           {release_date && (
             <p className="text-xs text-slate-500">
               {`Released ${format(new Date(release_date), 'MMMM d, yyyy')}`}
