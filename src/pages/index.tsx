@@ -31,8 +31,11 @@ export default function Home() {
   return (
     <div className="flex h-full flex-col md:container md:mx-auto py-5 px-2 sm:px-8">
       <h1 className="text-2xl font-extrabold">Most popular</h1>
+      {!isLoading && !isError && !movies?.length && (
+        <p data-testid="no-movies">No movies found.</p>
+      )}
       {isError ? (
-        <p className="text-red-700">
+        <p data-testid="popular-movies-error" className="text-red-700">
           An error occurred. Please refresh the page to try again.
         </p>
       ) : (
