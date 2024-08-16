@@ -1,6 +1,6 @@
-# Frontend Engineering Take-Home Exercise: Movie Library Application
+# Exercise: Movie Library Application
 
-The goal of this exercise is to implement a simple movie library application using the latest version of React and associated modern tools and libraries. Our expectation is that this will take a Senior Engineer 2-4 hours to complete, but we know you may be busy so take as much time as you need. Note that if you already have a recent project that generally fits the outline of this excercise, feel free to submit that instead. Thank you!
+The goal of this exercise is to implement a simple movie library application using the latest version of React and associated modern tools and libraries. 
 
 ## Exercise Background
 
